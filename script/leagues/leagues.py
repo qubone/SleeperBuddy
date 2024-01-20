@@ -1,6 +1,12 @@
 from typing import List, Dict
 from script.common.common import http_get_response_data
+from script.players.players import Player
 from enum import Enum
+from decimal import Decimal
+
+
+TRUE = 1
+FALSE = 0
 
 class RosterPosition(Enum):
     QB = 1
@@ -12,6 +18,11 @@ class RosterPosition(Enum):
     DEF = 7
     K = 8
     BN = 9
+
+class LeagueType(Enum):
+    REDRAFT = 0
+    KEEPER  = 1
+    DYNASTY = 2
 
 class ScoringSettings():
     def __init__(self, score_settings: Dict[str, float]) -> None:
@@ -38,7 +49,8 @@ class ScoringSettings():
         self.fum_rec: float = score_settings['fum_rec']
         self.fum_rec_td: float = score_settings['fum_rec_td']
         self.pass_int: float = score_settings['pass_int']
-        self.pass_int_td: float = score_settings['pass_int_td']
+        if 'pass_int_td' in score_settings:
+            self.pass_int_td: float = score_settings['pass_int_td']
         self.def_td: float = score_settings['def_td']
         self.safe: float = score_settings['safe']
         self.pts_allow_0: float = score_settings['pts_allow_0']
@@ -75,15 +87,90 @@ class ScoringSettings():
         if 'rec_td_50p' in score_settings:
             self.rec_td_50p: float = score_settings['rec_td_50p']
 
-
-class Settings():
+class LeagueSettings():
     def __init__(self, settings: dict) -> None:
-        pass
-        
-class Metadata():
-    def __init__(self, metadata: dict) -> None:
-        pass
+        self.daily_waivers_last_ran: int = settings['daily_waivers_last_ran']
+        self.reserve_allow_cov: int = settings['reserve_allow_cov']
+        self.reserve_slots: int = settings['reserve_slots']
+        self.leg: int = settings['leg']
+        self.offseason_adds: int = settings['offseason_adds']
+        self.bench_lock: int = settings['bench_lock']
+        self.trade_review_days: int = settings['trade_review_days']
+        self.league_average_match: int = settings['league_average_match']
+        self.waiver_type: int = settings['waiver_type'] # 0 Rolling Waivers 1 Reverse Standings 2 FAAB bidding
+        self.max_keepers: int = settings['max_keepers']
+        self.type:LeagueType = settings['type']
+        self.pick_trading: int = settings['pick_trading']
+        self.disable_trades: int = settings['disable_trades']
+        self.daily_waivers: int = settings['daily_waivers']
+        self.taxi_years: int = settings['taxi_years']
+        self.trade_deadline: int = settings['trade_deadline']
+        if 'veto_show_votes' in settings:
+            self.veto_show_votes: int = settings['veto_show_votes']
+        self.reserve_allow_sus: int = settings['reserve_allow_sus']
+        self.playoff_round_type: int = settings['playoff_round_type']
+        self.waiver_day_of_week: int = settings['waiver_day_of_week']
+        self.waiver_day_of_week: int = settings['waiver_day_of_week']
+        self.taxi_allow_vets: int = settings['taxi_allow_vets']
+        self.reserve_allow_dnr: int = settings['reserve_allow_dnr']
+        if 'veto_auto_poll' in settings:
+            self.veto_auto_poll: int = settings['veto_auto_poll']
+        self.commissioner_direct_invite: int = settings['commissioner_direct_invite']
+        self.reserve_allow_doubtful: int = settings['reserve_allow_doubtful']
+        self.waiver_clear_days: int = settings['waiver_clear_days']
+        self.playoff_week_start: int = settings['playoff_week_start']
+        self.daily_waivers_days: int = settings['daily_waivers_days']
+        self.last_scored_leg: int = settings['last_scored_leg']
+        self.taxi_slots: int = settings['taxi_slots']
+        self.playoff_type: int = settings['playoff_type']
+        self.daily_waivers_hour: int = settings['daily_waivers_hour']
+        self.num_teams: int = settings['num_teams']
+        if 'veto_votes_needed' in settings:
+            self.veto_votes_needed: int = settings['veto_votes_needed']
+        self.playoff_teams: int = settings['playoff_teams']
+        self.playoff_seed_type: int = settings['playoff_seed_type'] #Playoff Seeding rules 0 Default 1 Re-seed
+        self.start_week: int = settings['start_week']
+        self.reserve_allow_na: int = settings['reserve_allow_na']
+        self.draft_rounds: int = settings['draft_rounds']
+        self.taxi_deadline: int = settings['taxi_deadline']
+        if 'waiver_bid_min' in settings:
+            self.waiver_bid_min: int = settings['waiver_bid_min']
+        self.capacity_override: int = settings['capacity_override']
+        self.disable_adds: int = settings['disable_adds']
+        self.waiver_budget: int = settings['waiver_budget']
+        self.last_report: int = settings['last_report']
+        self.best_ball: int = settings['best_ball'] #1 True 0 False
 
+    # Leage type
+    def is_best_ball(self) -> bool:
+        return True if self.best_ball == TRUE else False
+    def is_redraft(self) -> bool:
+        return True if self.type == LeagueType.REDRAFT else False
+    def is_keeper(self) -> bool:
+        return True if self.type == LeagueType.KEEPER else False
+    def is_dynasty(self) -> bool:
+        return True if self.type == LeagueType.DYNASTY else False
+    
+    #Playoffs
+    def get_number_of_playoff_teams(self) -> int:
+        return self.playoff_teams
+    
+    #Taxi
+    def get_number_of_taxi_slots(self) -> int:
+        return self.taxi_slots
+    def get_number_of_taxi_years(self) -> int:
+        return self.taxi_years
+
+
+
+class Metadata():
+    def __init__(self, meta_data: dict) -> None:
+        if 'latest_league_winner_roster_id' in meta_data:
+            self.latest_league_winner_roster_id: str = meta_data['latest_league_winner_roster_id']
+        self.keeper_deadline: str = meta_data['keeper_deadline']
+        if 'copy_from_league_id' in meta_data:
+            self.copy_from_league_id: str = meta_data['copy_from_league_id']
+        self.auto_continue: str = meta_data['auto_continue']
 
 class LeagueData:
     def __init__(self, data: dict) -> None:
@@ -114,8 +201,8 @@ class LeagueData:
         self.shard: int = data['shard']
         self.company_id = data['company_id']
         self.avatar = data['avatar']
-        self.settings = {} # create settings "settings":{"daily_waivers_last_ran":30,"reserve_allow_cov":0,"reserve_slots":0,"leg":18,"offseason_adds":0,"bench_lock":0,"trade_review_days":2,"league_average_match":0,"waiver_type":0,"max_keepers":1,"type":0,"pick_trading":1,"disable_trades":1,"daily_waivers":0,"taxi_years":0,"trade_deadline":11,"veto_show_votes":0,"reserve_allow_sus":0,"reserve_allow_out":0,"playoff_round_type":0,"waiver_day_of_week":2,"taxi_allow_vets":0,"reserve_allow_dnr":0,"veto_auto_poll":0,"commissioner_direct_invite":0,"reserve_allow_doubtful":0,"waiver_clear_days":2,"playoff_week_start":0,"daily_waivers_days":5461,"last_scored_leg":18,"taxi_slots":0,"playoff_type":0,"daily_waivers_hour":0,"num_teams":12,"veto_votes_needed":8,"playoff_teams":6,"playoff_seed_type":0,"start_week":1,"reserve_allow_na":0,"draft_rounds":3,"taxi_deadline":0,"waiver_bid_min":0,"capacity_override":0,"disable_adds":1,"waiver_budget":100,"last_report":16,"best_ball":1},
-        self.metadata = {} # create metadata "metadata":{"latest_league_winner_roster_id":"1","keeper_deadline":"0","copy_from_league_id":"860539001768112128","auto_continue":"off"}
+        self.league_settings = LeagueSettings(data['settings'])
+        self.metadata = Metadata(data['metadata'])
         self.status: str = data['status'] #'complete'
         self.name: str = data['name'] # Glenn Hysén - bara ben BB
 
@@ -136,7 +223,112 @@ class Leagues:
             league_data = LeagueData(league)
             leagues.append(league_data)
         return leagues
+    
+class RosterMetadata():
+    def __init__(self, metadata: Dict[str, str]) -> None:
+        self.streak: str = metadata['streak']
+        self.record: str = metadata['record']
+    def get_winning_streak(self) -> str:
+        return self.streak
+    def get_game_record(self) -> str:
+        return self.record
+    def get_number_of_wins(self) -> int:
+        # for each W in number of games list
+        pass
+    def get_number_of_losses(self) -> int:
+        #number of games - wins
+        pass
+
+class RosterSettings():
+    def __init__(self, settings_data: Dict[str, int]) -> None:
+        self.wins = settings_data['wins']
+        self.waiver_position = settings_data['waiver_position']
+        self.waiver_budget_used = settings_data['waiver_budget_used']
+        self.total_moves = settings_data['total_moves']
+        self.ties = settings_data['ties']
+        self.ppts_decimal: int = settings_data['ppts_decimal']
+        self.ppts: int = settings_data['ppts']
+        self.losses: int = settings_data['losses']
+        self.fpts_decimal: int = settings_data['fpts_decimal']
+        self.fpts_against_decimal: int = settings_data['fpts_against_decimal']
+        self.fpts_against: int = settings_data['fpts_against']
+        self.fpts: int = settings_data['fpts']
+    def get_wins(self) -> int:
+        return self.wins
+    def get_losses(self) -> int:
+        return self.losses
+    def get_waiver_position(self) -> int:
+        return self.waiver_position
+    def get_waiver_budget_used(self) -> int:
+        return self.waiver_budget_used
+    def get_total_moves(self) -> int:
+        return self.total_moves
+    def get_ties(self) -> int:
+        return self.ties
+    def get_ppts(self) -> int:
+        #TODO: Refactor this
+        exact_ppts = Decimal(str(self.ppts)) + Decimal('.' + str(self.ppts_decimal))
+        return float(exact_ppts.real)
+    def get_fpts(self) -> int:
+        #TODO: Refactor this
+        exact_fpts = Decimal(str(self.fpts)) + Decimal('.' + str(self.fpts_decimal))
+        return float(exact_fpts.real)
+    def get_fpts_against(self) -> int:
+        #TODO: Refactor this
+        exact_pts_against = Decimal(str(self.pts_against)) + Decimal('.' + str(self.fpts_against_decimal))
+        return float(exact_pts_against.real)
+
+
+class LeagueRoster():
+    def __init__(self, roster_data: dict) -> None:
+        self.taxi = roster_data['taxi']
+        self.starters = roster_data['starters']
+        self.settings = RosterSettings(roster_data['settings'])
+        self.roster_id: int = roster_data['roster_id']
+        self.reserve = roster_data['reserve']
+        self.players = roster_data['players']
+        self.player_map = roster_data['player_map']
+        self.owner_id: str = roster_data['owner_id']
+        self.metadata = RosterMetadata(roster_data['metadata'])
+        self.league_id: str = roster_data['league_id']
+        self.keepers = roster_data['keepers']
+        self.co_owners = roster_data['co_owners']
+    
+    def get_players(self) -> List[Player]:
+        players = []
+        for player in self.players:
+            players.append(Player(player))
+        return players
+    
+    def get_starters(self) -> List[Player]:
+        starters = []
+        for player in self.starters:
+            starters.append(Player(player))
+        return starters
+    def get_roster_settings(self) -> RosterSettings:
+        return self.settings
+
+class League():
+    '''
+    This endpoint retrieves a specific league.
+    '''
+    def __init__(self, league_id: str) -> None:
+        self.league_url = http_get_response_data(f'https://api.sleeper.app/v1/league/{league_id}')
+        self.league_rosters = http_get_response_data(f'https://api.sleeper.app/v1/league/{league_id}/rosters')
+        self.test = None
+
+    def get_league(self) -> LeagueData:
+        return LeagueData(self.league_url)
+    
+    def get_rosters(self) -> List[LeagueRoster]:
+        rosters = []
+        for roster in self.league_rosters:
+            rosters.append(LeagueRoster(roster))
+        return rosters
 
 
     
+
+
+
 
